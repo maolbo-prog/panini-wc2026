@@ -244,7 +244,7 @@ body{font-family:'Georgia',serif;background:var(--bg);color:var(--text);
 </div>
 
 </div><!-- /content -->
-<div id="toast" class="toast" style="display:none"></div>
+<div id="toast" class="toast" style="display: none; background: rgb(127, 68, 0);">Zurückgesetzt</div>
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
@@ -391,6 +391,7 @@ function makeStickerEl(s){
     </div>
     <div class="si-right">
       <div class="cnt${cnt===0?" hidden":cnt>1?" dupe-cnt":""}" id="cnt-${s.num}">${cnt>1?cnt+"×":cnt===1?"✓":""}</div>
+      <button class="pbtn" onclick="removeDupe(${s.num})" title="Einen entfernen" style="${cnt<=1?"opacity:.25;pointer-events:none":""}">−</button>
       <button class="pbtn" onclick="addDupe(${s.num})" title="Noch einen hinzufügen">+</button>
     </div>
   `;
@@ -420,18 +421,39 @@ function addDupe(num){
   toast(`✓ ${ST[num].code} – ${c}× vorhanden`);
 }
 
-function updateStickerEl(num){
-  const el=document.getElementById("si-"+num);
-  if(!el)return;
+function removeDupe(num){
   const cnt=counts[num]||0;
-  const owned=cnt>0;
-  const dupe=cnt>1;
-  el.className="si"+(dupe?" dupe":owned?" owned":"");
-  const cntEl=document.getElementById("cnt-"+num);
-  if(cntEl){
-    cntEl.textContent=cnt>1?cnt+"×":cnt===1?"✓":"";
-    cntEl.className="cnt"+(cnt===0?" hidden":cnt>1?" dupe-cnt":"");
+  if(cnt<=1)return;
+  counts[num]=cnt-1;
+  sd();updH();
+  updateStickerEl(num);
+  // If no longer a dupe, remove from dupes tab
+  if(counts[num]===1){
+    const el=document.getElementById("si-"+num);
+    if(el&&el.closest("#dupelist"))el.remove();
   }
+  toast(`${ST[num].code} – noch ${counts[num]}× vorhanden`,"rm");
+}
+
+function updateStickerEl(num){
+  // Update ALL instances (browse tab + dupes tab both in DOM simultaneously)
+  document.querySelectorAll("[id='si-"+num+"']").forEach(el=>{
+    const cnt=counts[num]||0;
+    const owned=cnt>0;
+    const dupe=cnt>1;
+    el.className="si"+(dupe?" dupe":owned?" owned":"");
+    const cntEl=el.querySelector("[id='cnt-"+num+"']");
+    if(cntEl){
+      cntEl.textContent=cnt>1?cnt+"×":cnt===1?"✓":"";
+      cntEl.className="cnt"+(cnt===0?" hidden":cnt>1?" dupe-cnt":"");
+    }
+    // Update minus button opacity
+    const btns=el.querySelectorAll(".pbtn");
+    if(btns.length>=2){
+      btns[0].style.opacity=cnt<=1?"0.25":"1";
+      btns[0].style.pointerEvents=cnt<=1?"none":"auto";
+    }
+  });
 }
 
 // ── DUPES ─────────────────────────────────────────────────────────────────────
