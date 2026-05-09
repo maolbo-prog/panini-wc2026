@@ -1,0 +1,535 @@
+<html lang="de"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Panini WC 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --gold:#D4AF37;--gold2:#f0d060;--bg:#0d0d0d;--bg2:#161616;--bg3:#1f1f1f;
+  --border:#2c2c2c;--text:#f0e8d0;--muted:#777;--green:#00C853;--r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Georgia',serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;max-width:500px;margin:0 auto;min-height:100dvh;}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#1a0800,#2d1200);border-bottom:2px solid var(--gold);
+  padding:12px 16px 10px;position:sticky;top:0;z-index:100;}
+.hdr-row{display:flex;justify-content:space-between;align-items:center;}
+.hdr-sub{font-size:9px;letter-spacing:3px;color:var(--gold);font-family:sans-serif;text-transform:uppercase;}
+.hdr-title{font-size:17px;font-weight:bold;color:#fff;}
+.hdr-count{font-size:26px;font-weight:bold;color:var(--gold);line-height:1;text-align:right;}
+.hdr-count em{font-size:12px;color:var(--muted);font-style:normal;}
+.hdr-pct{font-size:10px;color:var(--muted);font-family:sans-serif;text-align:right;}
+.pbar{margin-top:8px;height:3px;background:#333;border-radius:2px;overflow:hidden;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width .5s;}
+
+/* NAV */
+.nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);
+  position:sticky;top:66px;z-index:99;}
+.nb{flex:1;padding:10px 2px 8px;background:none;border:none;color:var(--muted);
+  font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;
+  gap:2px;-webkit-appearance:none;}
+.nb span{font-size:8px;font-family:sans-serif;text-transform:uppercase;letter-spacing:.4px;}
+.nb.active{color:var(--gold);border-bottom:2px solid var(--gold);}
+
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.view{display:none;padding:14px;}
+.view.active{display:block;}
+
+/* HOME */
+.sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.scard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 8px;text-align:center;}
+.scard .v{font-size:22px;font-weight:bold;color:var(--gold);}
+.scard .l{font-size:9px;color:var(--muted);font-family:sans-serif;text-transform:uppercase;
+  letter-spacing:.8px;margin-top:2px;}
+.ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.gc{border-radius:10px;padding:9px 5px;text-align:center;color:#fff;cursor:pointer;}
+.gc:active{opacity:.7;}
+.gc .gn{font-size:10px;font-weight:bold;font-family:sans-serif;}
+.gc .gv{font-size:17px;font-weight:bold;margin:2px 0 1px;}
+.gc .gt{font-size:8px;opacity:.7;font-family:sans-serif;}
+.gc .gb{height:3px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:5px;overflow:hidden;}
+.gc .gbf{height:100%;background:rgba(255,255,255,.8);border-radius:2px;}
+
+.stitle{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;
+  font-family:sans-serif;margin-bottom:8px;}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;
+  border:none;border-radius:var(--r);font-size:14px;font-family:'Georgia',serif;cursor:pointer;
+  transition:opacity .15s,transform .1s;-webkit-appearance:none;}
+.btn:active{transform:scale(.97);opacity:.8;}
+.btn+.btn{margin-top:7px;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0800;font-weight:bold;}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);}
+.btn-green{background:#1B5E20;color:#fff;}
+.btn-blue{background:#0d47a1;color:#fff;}
+.btn-red{background:transparent;border:1.5px solid #c62828;color:#ef9a9a;}
+
+/* BROWSE / STICKER LIST */
+.frow{display:flex;gap:5px;margin-bottom:8px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none;}
+.frow::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:50px;
+  padding:5px 13px;font-size:11px;color:var(--muted);cursor:pointer;font-family:sans-serif;
+  white-space:nowrap;-webkit-appearance:none;}
+.chip.active{background:var(--gold);color:#1a0800;border-color:var(--gold);font-weight:bold;}
+.sinput{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 13px;color:var(--text);font-size:14px;font-family:'Georgia',serif;
+  margin-bottom:8px;-webkit-appearance:none;outline:none;}
+.sinput:focus{border-color:var(--gold);}
+
+.slist{display:flex;flex-direction:column;gap:5px;}
+
+/* Sticker item – tap left = toggle owned, tap + = add duplicate */
+.si{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:10px;
+  padding:8px 11px;border:1px solid var(--border);}
+.si.owned{border-color:rgba(0,200,83,.35);background:rgba(0,200,83,.08);}
+.si.dupe{border-color:rgba(255,200,0,.4);background:rgba(255,200,0,.06);}
+
+/* left tap zone */
+.si-left{flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;}
+.si-left:active{opacity:.7;}
+.sn{font-size:17px;font-weight:bold;color:var(--gold);width:38px;flex-shrink:0;text-align:right;}
+.sinfo{flex:1;min-width:0;}
+.sc2{font-size:13px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sm2{font-size:10px;color:var(--muted);font-family:sans-serif;margin-top:1px;}
+.gtag{font-size:9px;font-weight:bold;font-family:sans-serif;padding:2px 6px;border-radius:50px;
+  color:#fff;flex-shrink:0;}
+
+/* right side: count badge + plus button */
+.si-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.cnt{min-width:24px;height:24px;border-radius:12px;background:var(--green);color:#fff;
+  font-size:12px;font-weight:bold;font-family:sans-serif;display:flex;align-items:center;
+  justify-content:center;padding:0 5px;}
+.cnt.hidden{display:none;}
+.cnt.dupe-cnt{background:#f0b400;color:#1a0800;}
+.pbtn{width:30px;height:30px;border-radius:50%;border:none;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-appearance:none;
+  background:var(--bg2);color:var(--muted);border:1px solid var(--border);}
+.pbtn:active{opacity:.6;}
+
+.empty{text-align:center;padding:36px 16px;color:var(--muted);font-family:sans-serif;font-size:13px;}
+.empty .ei{font-size:40px;margin-bottom:10px;}
+
+/* SAVE */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px;margin-bottom:10px;}
+.card h3{font-size:14px;margin-bottom:5px;}
+.card p{font-size:11px;color:var(--muted);font-family:sans-serif;line-height:1.5;margin-bottom:10px;}
+
+/* TOAST */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:9px 20px;
+  border-radius:50px;font-size:12px;font-family:sans-serif;z-index:9999;
+  box-shadow:0 4px 20px rgba(0,0,0,.6);animation:tin .2s ease;pointer-events:none;
+  max-width:88vw;text-align:center;color:#fff;}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="hdr-sub">Panini™ Official</div>
+      <div class="hdr-title">FIFA World Cup 2026™</div>
+    </div>
+    <div>
+      <div class="hdr-count" id="hc">0<em>/980</em></div>
+      <div class="hdr-pct" id="hp">0% komplett</div>
+    </div>
+  </div>
+  <div class="pbar"><div class="pfill" id="pf" style="width:0%"></div></div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nb" onclick="sw('home')" id="nav-home">🏠<span>Übersicht</span></button>
+  <button class="nb" onclick="sw('browse')" id="nav-browse">📋<span>Sticker</span></button>
+  <button class="nb" onclick="sw('dupes')" id="nav-dupes">🔁<span>Doppelte</span></button>
+  <button class="nb active" onclick="sw('save')" id="nav-save">💾<span>Speichern</span></button>
+</div>
+
+<div class="content">
+
+<!-- HOME -->
+<div class="view" id="view-home">
+  <div class="sgrid">
+    <div class="scard"><div class="v" id="so">0</div><div class="l">Vorhanden</div></div>
+    <div class="scard"><div class="v" id="sm">980</div><div class="l">Fehlend</div></div>
+    <div class="scard"><div class="v" id="sd">0</div><div class="l">Doppelte</div></div>
+  </div>
+  <div class="stitle">Nach Gruppe</div>
+  <div class="ggrid" id="ggrid"><div class="gc" style="background: rgb(69, 90, 100);"><div class="gn">Gr.FWC</div><div class="gv">0</div><div class="gt">von 20</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(46, 125, 50);"><div class="gn">Gr.A</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(21, 101, 192);"><div class="gn">Gr.B</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(230, 81, 0);"><div class="gn">Gr.C</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(106, 27, 154);"><div class="gn">Gr.D</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(198, 40, 40);"><div class="gn">Gr.E</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(0, 96, 100);"><div class="gn">Gr.F</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(191, 54, 12);"><div class="gn">Gr.G</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(38, 50, 56);"><div class="gn">Gr.H</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(51, 105, 30);"><div class="gn">Gr.I</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(245, 127, 23);"><div class="gn">Gr.J</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(78, 52, 46);"><div class="gn">Gr.K</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div><div class="gc" style="background: rgb(0, 77, 64);"><div class="gn">Gr.L</div><div class="gv">0</div><div class="gt">von 80</div><div class="gb"><div class="gbf" style="width:0%"></div></div></div></div>
+  <div class="stitle">Anleitung</div>
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-size:12px;font-family:sans-serif;color:var(--muted);line-height:1.8;">
+    👆 <strong style="color:var(--text)">Sticker antippen</strong> → vorhanden markieren / entmarkieren<br>
+    ➕ <strong style="color:var(--text)">Plus-Taste</strong> → weiteres Exemplar (Doppelter) hinzufügen<br>
+    🔁 <strong style="color:var(--text)">Tab «Doppelte»</strong> → alle Duplikate auf einen Blick<br>
+    💾 <strong style="color:var(--text)">Tab «Speichern»</strong> → JSON / Excel / App downloaden
+  </div>
+</div>
+
+<!-- BROWSE -->
+<div class="view" id="view-browse">
+  <input class="sinput" id="srch" placeholder="🔍  Nummer oder Code…" oninput="renderBrowse()" type="search">
+  <div class="frow" id="fs">
+    <button class="chip active" onclick="sf('s','ALL',this)">Alle</button>
+    <button class="chip" onclick="sf('s','OWNED',this)">✓ Vorhanden</button>
+    <button class="chip" onclick="sf('s','MISS',this)">✗ Fehlend</button>
+    <button class="chip" onclick="sf('s','DUPE',this)">🔁 Doppelte</button>
+  </div>
+  <div class="frow" id="fg">
+    <button class="chip active" onclick="sf('g','ALL',this)">Alle</button>
+    <button class="chip" onclick="sf('g','FWC',this)">FWC</button>
+  <button class="chip">Gr.A</button><button class="chip">Gr.B</button><button class="chip">Gr.C</button><button class="chip">Gr.D</button><button class="chip">Gr.E</button><button class="chip">Gr.F</button><button class="chip">Gr.G</button><button class="chip">Gr.H</button><button class="chip">Gr.I</button><button class="chip">Gr.J</button><button class="chip">Gr.K</button><button class="chip">Gr.L</button></div>
+  <div class="slist" id="slist"></div>
+</div>
+
+<!-- DUPES -->
+<div class="view" id="view-dupes">
+  <div style="font-size:12px;color:var(--muted);font-family:sans-serif;margin-bottom:12px;line-height:1.5;">
+    Sticker die du mehr als einmal hast – zum Tauschen mit Kollegen.
+  </div>
+  <div class="slist" id="dupelist"></div>
+</div>
+
+<!-- SAVE -->
+<div class="view active" id="view-save">
+  <div class="stitle">App herunterladen</div>
+  <div class="card">
+    <h3>⬇️ App als Datei speichern</h3>
+    <p>HTML-Datei lokal speichern und per AirDrop, WhatsApp oder E-Mail teilen. Öffnet direkt im Browser – keine Installation nötig.</p>
+    <button class="btn btn-gold" onclick="dlApp()">⬇️ &nbsp;App herunterladen (.html)</button>
+  </div>
+
+  <div class="stitle">Sammlung sichern</div>
+  <div class="card">
+    <h3>💾 Stand als JSON speichern</h3>
+    <p>Auf OneDrive, iCloud oder lokal ablegen – auf jedem Gerät wieder ladbar. Enthält auch Doppelte.</p>
+    <button class="btn btn-blue" onclick="expJSON()">💾 &nbsp;JSON speichern</button>
+  </div>
+  <div class="card">
+    <h3>📂 Stand aus JSON laden</h3>
+    <p>Gespeicherten Stand wiederherstellen.</p>
+    <button class="btn btn-outline" onclick="document.getElementById('ji').click()">📂 &nbsp;JSON laden</button>
+    <input type="file" id="ji" accept=".json" style="display:none" onchange="impJSON(event)">
+  </div>
+
+  <div class="stitle">Export</div>
+  <div class="card">
+    <h3>📊 Excel exportieren</h3>
+    <p>Alle 980 Sticker mit Anzahl – drei Blätter: Gesamtliste, Meine Sticker, Doppelte.</p>
+    <button class="btn btn-green" onclick="expXLS()">📊 &nbsp;Excel herunterladen (.xlsx)</button>
+  </div>
+  <div class="card">
+    <h3>📋 Fehlende Nummern kopieren</h3>
+    <p>Alle fehlenden Sticker-Nummern in Zwischenablage – zum Einfügen in WhatsApp etc.</p>
+    <button class="btn btn-outline" onclick="copyMiss()">📋 &nbsp;Fehlende kopieren</button>
+  </div>
+  <div class="card">
+    <h3>📋 Doppelte Nummern kopieren</h3>
+    <p>Alle Duplikate in Zwischenablage – zum Tauschen mit Kollegen.</p>
+    <button class="btn btn-outline" onclick="copyDupes()">📋 &nbsp;Doppelte kopieren</button>
+  </div>
+  <div class="card" style="border-color:#c62828">
+    <h3>🗑 Zurücksetzen</h3>
+    <p>Alle Daten löschen. Vorher JSON exportieren!</p>
+    <button class="btn btn-red" onclick="doReset()">🗑 &nbsp;Alles löschen</button>
+  </div>
+</div>
+
+</div><!-- /content -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const TEAMS=[["MEX","A"],["RSA","A"],["KOR","A"],["CZE","A"],["CAN","B"],["BIH","B"],["QAT","B"],["SUI","B"],["BRA","C"],["MAR","C"],["HAI","C"],["SCO","C"],["USA","D"],["PAR","D"],["AUS","D"],["TUR","D"],["GER","E"],["CUW","E"],["CIV","E"],["ECU","E"],["NED","F"],["JPN","F"],["SWE","F"],["TUN","F"],["BEL","G"],["EGY","G"],["IRN","G"],["NZL","G"],["ESP","H"],["CPV","H"],["KSA","H"],["URU","H"],["FRA","I"],["SEN","I"],["IRQ","I"],["NOR","I"],["ARG","J"],["ALG","J"],["AUT","J"],["JOR","J"],["POR","K"],["COD","K"],["UZB","K"],["COL","K"],["ENG","L"],["CRO","L"],["GHA","L"],["PAN","L"]];
+const GC={FWC:"#455A64",A:"#2E7D32",B:"#1565C0",C:"#E65100",D:"#6A1B9A",E:"#C62828",F:"#006064",G:"#BF360C",H:"#263238",I:"#33691E",J:"#F57F17",K:"#4E342E",L:"#004D40"};
+
+const ST={};
+for(let i=0;i<9;i++) ST[i+1]={num:i+1,code:`FWC${String(i).padStart(2,"0")}`,group:"FWC",team:"-",type:"Intro"};
+let cur=10;
+for(const[t,g]of TEAMS){for(let p=1;p<=20;p++){ST[cur]={num:cur,code:`${t}${String(p).padStart(2,"0")}`,group:g,team:t,type:p===1?"Badge":p===13?"Teamfoto":"Spieler"};cur++;}}
+for(let i=9;i<20;i++){ST[cur]={num:cur,code:`FWC${String(i).padStart(2,"0")}`,group:"FWC",team:"-",type:"Ende"};cur++;}
+const TOTAL=980,SK="panini26v4";
+
+// counts[n] = how many of sticker n the user has (0 = not owned, 1 = owned, 2+ = dupes)
+let counts={};
+
+function ld(){
+  try{const r=localStorage.getItem(SK);if(r)counts=JSON.parse(r);}catch(e){}
+}
+function sd(){
+  try{localStorage.setItem(SK,JSON.stringify(counts));}catch(e){}
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function totalOwned(){return Object.values(counts).filter(v=>v>0).length;}
+function totalDupes(){return Object.values(counts).reduce((s,v)=>s+(v>1?v-1:0),0);}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let tt;
+function toast(msg,type="ok"){
+  const el=document.getElementById("toast");
+  el.textContent=msg;el.style.display="block";
+  el.style.background=type==="ok"?"#1B5E20":type==="rm"?"#7f4400":"#B71C1C";
+  clearTimeout(tt);tt=setTimeout(()=>el.style.display="none",2200);
+}
+
+// ── HEADER ────────────────────────────────────────────────────────────────────
+function updH(){
+  const n=totalOwned(),p=Math.round(n/TOTAL*100),d=totalDupes();
+  document.getElementById("hc").innerHTML=`${n}<em>/${TOTAL}</em>`;
+  document.getElementById("hp").textContent=`${p}% komplett`;
+  document.getElementById("pf").style.width=p+"%";
+  document.getElementById("so").textContent=n;
+  document.getElementById("sm").textContent=TOTAL-n;
+  document.getElementById("sd").textContent=d;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function sw(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".nb").forEach(x=>x.classList.remove("active"));
+  document.getElementById("view-"+v).classList.add("active");
+  document.getElementById("nav-"+v).classList.add("active");
+  if(v==="home")renderHome();
+  if(v==="browse")renderBrowse();
+  if(v==="dupes")renderDupes();
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────────
+function renderHome(){
+  updH();
+  const grid=document.getElementById("ggrid");grid.innerHTML="";
+  const gs={FWC:{total:20,o:0}};
+  for(const[,g]of TEAMS){if(!gs[g])gs[g]={total:0,o:0};gs[g].total+=20;}
+  for(const s of Object.values(ST)){if((counts[s.num]||0)>0){if(!gs[s.group])gs[s.group]={total:0,o:0};gs[s.group].o++;}}
+  for(const g of["FWC","A","B","C","D","E","F","G","H","I","J","K","L"]){
+    if(!gs[g])continue;
+    const{total,o}=gs[g],p=total?Math.round(o/total*100):0;
+    const d=document.createElement("div");d.className="gc";d.style.background=GC[g]||"#333";
+    d.innerHTML=`<div class="gn">Gr.${g}</div><div class="gv">${o}</div><div class="gt">von ${total}</div><div class="gb"><div class="gbf" style="width:${p}%"></div></div>`;
+    d.onclick=()=>{setGF(g);sw("browse");};
+    grid.appendChild(d);
+  }
+}
+
+// ── BROWSE ────────────────────────────────────────────────────────────────────
+let fS="ALL",fG="ALL";
+
+function buildGF(){
+  const row=document.getElementById("fg");
+  for(const g of["A","B","C","D","E","F","G","H","I","J","K","L"]){
+    const b=document.createElement("button");b.className="chip";b.textContent="Gr."+g;
+    b.onclick=()=>sf("g",g,b);row.appendChild(b);
+  }
+}
+function setGF(g){
+  fG=g;
+  document.querySelectorAll("#fg .chip").forEach(b=>{
+    b.classList.toggle("active",b.textContent===(g==="FWC"?"FWC":g==="ALL"?"Alle":"Gr."+g));
+  });
+}
+function sf(type,val,btn){
+  if(type==="s"){fS=val;document.querySelectorAll("#fs .chip").forEach(b=>b.classList.remove("active"));}
+  else{fG=val;document.querySelectorAll("#fg .chip").forEach(b=>b.classList.remove("active"));}
+  btn.classList.add("active");renderBrowse();
+}
+
+function renderBrowse(){
+  const q=document.getElementById("srch").value.toLowerCase();
+  const list=document.getElementById("slist");list.innerHTML="";
+  const items=[];
+  for(let n=1;n<=TOTAL;n++){
+    const s=ST[n];if(!s)continue;
+    const cnt=counts[n]||0;
+    if(fG!=="ALL"&&s.group!==fG)continue;
+    if(fS==="OWNED"&&cnt===0)continue;
+    if(fS==="MISS"&&cnt>0)continue;
+    if(fS==="DUPE"&&cnt<2)continue;
+    if(q&&!String(n).includes(q)&&!s.code.toLowerCase().includes(q))continue;
+    items.push(s);
+  }
+  if(!items.length){list.innerHTML=`<div class="empty"><div class="ei">🔍</div>Nichts gefunden</div>`;return;}
+  for(const s of items.slice(0,400)){
+    list.appendChild(makeStickerEl(s));
+  }
+  if(items.length>400){
+    const i=document.createElement("div");
+    i.style.cssText="text-align:center;padding:10px;color:var(--muted);font-size:11px;font-family:sans-serif;";
+    i.textContent=`Zeige 400/${items.length} – Suche verfeinern`;
+    list.appendChild(i);
+  }
+}
+
+function makeStickerEl(s){
+  const cnt=counts[s.num]||0;
+  const owned=cnt>0;
+  const dupe=cnt>1;
+  const d=document.createElement("div");
+  d.className="si"+(dupe?" dupe":owned?" owned":"");
+  d.id="si-"+s.num;
+
+  d.innerHTML=`
+    <div class="si-left" onclick="togOwned(${s.num})">
+      <div class="sn">${s.num}</div>
+      <div class="sinfo">
+        <div class="sc2">${s.code}</div>
+        <div class="sm2">${s.type} · ${s.team!=="-"?s.team:"FIFA WC"}</div>
+      </div>
+      <div class="gtag" style="background:${GC[s.group]||"#555"}">${s.group==="FWC"?"FWC":"Gr."+s.group}</div>
+    </div>
+    <div class="si-right">
+      <div class="cnt${cnt===0?" hidden":cnt>1?" dupe-cnt":""}" id="cnt-${s.num}">${cnt>1?cnt:cnt===1?"✓":""}</div>
+      <button class="pbtn" onclick="addDupe(${s.num})" title="Noch einen hinzufügen">+</button>
+    </div>
+  `;
+  return d;
+}
+
+function togOwned(num){
+  const cnt=counts[num]||0;
+  if(cnt===0){
+    counts[num]=1;
+    toast(`✓ ${ST[num].code} markiert`);
+  } else {
+    counts[num]=0;
+    delete counts[num];
+    toast(`${ST[num].code} entfernt`,"rm");
+  }
+  sd();updH();
+  updateStickerEl(num);
+}
+
+function addDupe(num){
+  const cnt=counts[num]||0;
+  counts[num]=cnt+1;
+  sd();updH();
+  updateStickerEl(num);
+  const c=counts[num];
+  toast(`✓ ${ST[num].code} – jetzt ${c}× vorhanden`);
+}
+
+function updateStickerEl(num){
+  const el=document.getElementById("si-"+num);
+  if(!el)return;
+  const cnt=counts[num]||0;
+  const owned=cnt>0;
+  const dupe=cnt>1;
+  el.className="si"+(dupe?" dupe":owned?" owned":"");
+  const cntEl=document.getElementById("cnt-"+num);
+  if(cntEl){
+    cntEl.textContent=cnt>1?cnt:cnt===1?"✓":"";
+    cntEl.className="cnt"+(cnt===0?" hidden":cnt>1?" dupe-cnt":"");
+  }
+}
+
+// ── DUPES ─────────────────────────────────────────────────────────────────────
+function renderDupes(){
+  const list=document.getElementById("dupelist");list.innerHTML="";
+  const dupes=Object.entries(counts).filter(([,v])=>v>1).map(([k])=>parseInt(k)).sort((a,b)=>a-b);
+  if(!dupes.length){
+    list.innerHTML=`<div class="empty"><div class="ei">🔁</div>Keine Doppelten vorhanden</div>`;
+    return;
+  }
+  for(const n of dupes){
+    const s=ST[n];if(!s)continue;
+    list.appendChild(makeStickerEl(s));
+  }
+}
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+function expJSON(){
+  const d={version:2,date:new Date().toISOString(),counts};
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`Panini_WC2026_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  toast("✓ JSON wird heruntergeladen");
+}
+function impJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.counts){counts=d.counts;}
+      else if(d.owned&&Array.isArray(d.owned)){counts={};d.owned.forEach(n=>counts[n]=1);}
+      else throw new Error("Ungültiges Format");
+      sd();updH();renderHome();
+      toast(`✓ Stand geladen`);
+    }catch(err){toast("Fehler: "+err.message,"err");}
+  };
+  r.readAsText(file);e.target.value="";
+}
+function expXLS(){
+  // Sheet 1: all stickers
+  const rows=[["Sticker Nr.","Album-Code","Gruppe","Team","Typ","Anzahl","Doppelte"]];
+  for(let n=1;n<=TOTAL;n++){
+    const s=ST[n];if(!s)continue;
+    const cnt=counts[n]||0;
+    rows.push([s.num,s.code,s.group,s.team,s.type,cnt,cnt>1?cnt-1:0]);
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"]=[{wch:13},{wch:13},{wch:10},{wch:10},{wch:13},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws,"Übersetzungstabelle");
+
+  // Sheet 2: owned
+  const my=[["Sticker Nr.","Album-Code","Gruppe","Team","Typ","Anzahl"]];
+  for(const[k,v]of Object.entries(counts)){
+    if(v<1)continue;
+    const s=ST[parseInt(k)];if(s)my.push([s.num,s.code,s.group,s.team,s.type,v]);
+  }
+  my.sort((a,b)=>a[0]-b[0]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(my),"Meine Sticker");
+
+  // Sheet 3: dupes
+  const dp=[["Sticker Nr.","Album-Code","Gruppe","Team","Typ","Doppelte"]];
+  for(const[k,v]of Object.entries(counts)){
+    if(v<2)continue;
+    const s=ST[parseInt(k)];if(s)dp.push([s.num,s.code,s.group,s.team,s.type,v-1]);
+  }
+  dp.sort((a,b)=>a[0]-b[0]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dp),"Doppelte");
+
+  XLSX.writeFile(wb,"Panini_WC2026.xlsx");
+  toast("✓ Excel wird heruntergeladen");
+}
+async function copyMiss(){
+  const m=[];for(let n=1;n<=TOTAL;n++)if(!(counts[n]>0)&&ST[n])m.push(ST[n].code);
+  try{await navigator.clipboard.writeText(m.join(", "));toast(`✓ ${m.length} fehlende Codes kopiert`);}
+  catch{toast("Kopieren fehlgeschlagen","err");}
+}
+async function copyDupes(){
+  const d=[];
+  for(const[k,v]of Object.entries(counts)){if(v>1)d.push(parseInt(k));}
+  d.sort((a,b)=>a-b);
+  if(!d.length){toast("Keine Doppelten vorhanden","rm");return;}
+  const text=d.map(n=>`${ST[n].code} (${counts[n]-1}×)`).join(", ");
+  try{await navigator.clipboard.writeText(text);toast(`✓ ${d.length} Doppelte kopiert`);}
+  catch{toast("Kopieren fehlgeschlagen","err");}
+}
+function dlApp(){
+  const blob=new Blob([document.documentElement.outerHTML],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="Panini_WC2026_Scanner.html";a.click();URL.revokeObjectURL(a.href);
+  toast("✓ App wird heruntergeladen");
+}
+function doReset(){
+  if(!confirm(`Wirklich alle Daten löschen?\n(Vorher JSON exportieren!)`))return;
+  counts={};sd();updH();renderHome();toast("Zurückgesetzt","rm");
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+ld();buildGF();renderHome();
+</script>
+
+
+</body></html>
